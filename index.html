@@ -34,7 +34,7 @@
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[1000] flex flex-col items-center justify-center transition-opacity duration-500">
         <div class="w-16 h-16 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
-        <p class="text-white font-black mt-6 tracking-widest uppercase text-sm">جاري مزامنة البيانات...</p>
+        <p class="text-white font-black mt-6 tracking-widest uppercase text-sm">جاري مزامنة البيانات من العمود AE...</p>
     </div>
 
     <!-- Header Section -->
@@ -51,7 +51,7 @@
                             <span class="bg-emerald-500 text-slate-950 text-xs px-3 py-1 rounded-full font-black mr-3">2026</span>
                         </h1>
                         <p class="text-emerald-100/50 text-xs font-bold mt-2 flex items-center gap-2 justify-start">
-                             <i data-lucide="shield-alert" class="w-4 h-4 text-emerald-400"></i> نظام تدقيق الخطة التشغيلية والامتثال الميداني
+                             <i data-lucide="shield-alert" class="w-4 h-4 text-emerald-400"></i> نظام تدقيق الخطة التشغيلية والامتثال الميداني (العمود AE)
                         </p>
                     </div>
                 </div>
@@ -124,6 +124,7 @@
     <script>
         const DATA_SOURCE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTUOdo0dr8lTA7HXUgX8-gQGwxc_8acqFd74sFMsZluu8R-uAsyw4wmifW9Y3iQld9wC47rHq3_mn_t/pub?gid=0&single=true&output=csv";
 
+        // تعديل الفهارس للأعمدة المطلوبة
         const COL = {
             CONTRACTOR: 1,       // العمود B
             CENTER_ID: 7,        // العمود H
@@ -133,7 +134,7 @@
             KEROSENE_STATUS: 18, // العمود S
             COMMIT_STATUS: 21,   // العمود V
             PLAN_SUBMISSION: 26, // العمود AA
-            READINESS_MINUTES: 31 // العمود AF (Index 31)
+            READINESS_MINUTES: 30 // العمود AE (Index 30) تم التعديل من AF إلى AE
         };
 
         let masterData = [];
@@ -159,11 +160,14 @@
                         cell.replace(/^["']|["']$/g, '').trim()
                     );
 
-                    if (row.length < 32) return null; // التأكد من وجود أعمدة كافية حتى AF
+                    // التأكد من وجود بيانات في العمود AE (Index 30)
+                    if (row.length < 31) return null; 
 
                     const idRaw = row[COL.CENTER_ID] || "";
                     const idMatch = idRaw.match(/\d+/);
                     const numericId = idMatch ? parseInt(idMatch[0]) : (9000 + index);
+
+                    const readinessValue = row[COL.READINESS_MINUTES] || "";
 
                     return {
                         id: numericId,
@@ -175,7 +179,8 @@
                         kerosene: row[COL.KEROSENE_STATUS]?.includes("تم استلام الملفات"),
                         commitment: row[COL.COMMIT_STATUS]?.includes("تم التعبئة"),
                         plan: row[COL.PLAN_SUBMISSION] === "تم التسليم",
-                        readiness: row[COL.READINESS_MINUTES] === "تم الاستلام"
+                        // التحقق الدقيق من النص "تم الاستلام" فقط
+                        readiness: readinessValue === "تم الاستلام"
                     };
                 }).filter(Boolean);
 
