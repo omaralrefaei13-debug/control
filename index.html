@@ -40,18 +40,18 @@
     <!-- Header Section -->
     <header id="mainHeader" class="sticky top-0 z-50 py-5 transition-all duration-300">
         <div class="max-w-[1600px] mx-auto px-6 text-right">
-            <div class="relative overflow-hidden bg-gradient-to-r from-slate-950 via-slate-800 to-emerald-950 rounded-[2.5rem] shadow-2xl p-7 flex flex-col lg:flex-row justify-between items-center gap-6">
+            <div class="relative overflow-hidden bg-gradient-to-r from-slate-950 via-slate-800 to-emerald-950 rounded-[2.5rem] shadow-2xl p-7 flex flex-col lg:flex-row justify-between items-center gap-6 text-right">
                 <div class="flex items-center gap-6 text-right">
                     <div class="bg-emerald-500/20 backdrop-blur-xl p-5 rounded-[2rem] border border-emerald-400/30 text-emerald-400 shadow-inner">
                         <i data-lucide="building-2" class="w-10 h-10 animate-pulse-custom"></i>
                     </div>
-                    <div>
+                    <div class="text-right">
                         <h1 class="text-2xl lg:text-3xl font-[900] text-white tracking-tight leading-none text-right">
                             مرصد تعثرات متعهدي الاعاشة
                             <span class="bg-emerald-500 text-slate-950 text-xs px-3 py-1 rounded-full font-black mr-3">2026</span>
                         </h1>
                         <p class="text-emerald-100/50 text-xs font-bold mt-2 flex items-center gap-2 justify-start">
-                             <i data-lucide="shield-alert" class="w-4 h-4 text-emerald-400"></i> نظام تدقيق الخطة التشغيلية والامتثال
+                             <i data-lucide="shield-alert" class="w-4 h-4 text-emerald-400"></i> نظام تدقيق الخطة التشغيلية والامتثال الميداني
                         </p>
                     </div>
                 </div>
@@ -82,12 +82,12 @@
 
         <!-- Table Container -->
         <div class="bg-white rounded-[3.5rem] shadow-2xl shadow-slate-200/50 border border-slate-200/50 overflow-hidden">
-            <div class="px-10 py-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <div class="px-10 py-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 text-right">
                 <div class="flex items-center gap-4 text-right">
                     <div class="bg-emerald-600 w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg">
                         <i data-lucide="clipboard-check" class="w-5 h-5"></i>
                     </div>
-                    <span class="text-lg font-[900] text-slate-700 tracking-wide uppercase">سجل تتبع الجاهزية والامتثال الميداني</span>
+                    <span class="text-lg font-[900] text-slate-700 tracking-wide uppercase">سجل تتبع الجاهزية والامتثال الميداني (تحديث مباشر)</span>
                 </div>
                 <div id="updateTime" class="px-5 py-2 rounded-2xl bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-widest border border-emerald-200 flex items-center gap-2">
                     تحديث حي: --:--:--
@@ -105,6 +105,7 @@
                             <th class="p-8 text-xs font-black text-slate-400 uppercase text-center">الكيروسين</th>
                             <th class="p-8 text-xs font-black text-slate-400 uppercase text-center">التعهد</th>
                             <th class="p-8 text-xs font-black text-slate-400 uppercase text-center">الخطة التشغيلية</th>
+                            <th class="p-8 text-xs font-black text-slate-400 uppercase text-center">محضر الجاهزية</th>
                             <th class="p-8 text-xs font-black text-slate-400 uppercase text-center">الإجراءات</th>
                         </tr>
                     </thead>
@@ -117,7 +118,7 @@
     </main>
 
     <footer class="mt-20 text-center opacity-40 pb-10">
-        <p class="text-slate-400 font-black text-sm uppercase tracking-[0.5em]">Hajj 2026 Compliance Monitoring | Mina Site</p>
+        <p class="text-slate-400 font-black text-sm uppercase tracking-[0.5em]">Hajj 2026 Compliance Monitoring | Operational Readiness Hub</p>
     </footer>
 
     <script>
@@ -131,7 +132,8 @@
             LIAISON_PHONE: 17,   // العمود R
             KEROSENE_STATUS: 18, // العمود S
             COMMIT_STATUS: 21,   // العمود V
-            PLAN_SUBMISSION: 26  // العمود AA (Index 26)
+            PLAN_SUBMISSION: 26, // العمود AA
+            READINESS_MINUTES: 31 // العمود AF (Index 31)
         };
 
         let masterData = [];
@@ -157,14 +159,11 @@
                         cell.replace(/^["']|["']$/g, '').trim()
                     );
 
-                    if (row.length < 27) return null;
+                    if (row.length < 32) return null; // التأكد من وجود أعمدة كافية حتى AF
 
                     const idRaw = row[COL.CENTER_ID] || "";
                     const idMatch = idRaw.match(/\d+/);
                     const numericId = idMatch ? parseInt(idMatch[0]) : (9000 + index);
-
-                    const planText = row[COL.PLAN_SUBMISSION] || "";
-                    const isPlanDone = planText === "تم التسليم";
 
                     return {
                         id: numericId,
@@ -175,7 +174,8 @@
                         liaison: row[COL.LIAISON_STATUS]?.includes("تمت الافادة بضابط الاتصال من قبل المالك"),
                         kerosene: row[COL.KEROSENE_STATUS]?.includes("تم استلام الملفات"),
                         commitment: row[COL.COMMIT_STATUS]?.includes("تم التعبئة"),
-                        plan: isPlanDone
+                        plan: row[COL.PLAN_SUBMISSION] === "تم التسليم",
+                        readiness: row[COL.READINESS_MINUTES] === "تم الاستلام"
                     };
                 }).filter(Boolean);
 
@@ -202,7 +202,8 @@
                 liaison: masterData.filter(d => !d.liaison).length,
                 kerosene: masterData.filter(d => !d.kerosene).length,
                 commitment: masterData.filter(d => !d.commitment).length,
-                plan: masterData.filter(d => !d.plan).length
+                plan: masterData.filter(d => !d.plan).length,
+                readiness: masterData.filter(d => !d.readiness).length
             };
 
             const kpis = [
@@ -210,18 +211,19 @@
                 { id: 'liaison', label: 'نواقص ضابط', val: stats.liaison, color: 'orange', icon: 'user-minus' },
                 { id: 'kerosene', label: 'نواقص كيروسين', val: stats.kerosene, color: 'amber', icon: 'fuel' },
                 { id: 'commitment', label: 'نواقص التعهد', val: stats.commitment, color: 'indigo', icon: 'check-square' },
-                { id: 'plan', label: 'نواقص الخطة التشغيلية', val: stats.plan, color: 'emerald', icon: 'clipboard-check' }
+                { id: 'plan', label: 'نواقص الخطة التشغيلية', val: stats.plan, color: 'emerald', icon: 'clipboard-list' },
+                { id: 'readiness', label: 'نواقص محضر الجاهزية', val: stats.readiness, color: 'rose', icon: 'file-warning' }
             ];
 
             const kpiContainer = document.getElementById('kpiContainer');
             kpiContainer.innerHTML = kpis.map(kpi => `
-                <div onclick="setFilter('${kpi.id}')" class="cursor-pointer group p-6 rounded-[2rem] border-2 transition-all duration-300 ${activeFilter === kpi.id ? 'bg-white border-'+kpi.color+'-500 active-filter' : 'bg-white border-transparent shadow-sm hover:border-slate-200'}">
-                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 transition-all ${activeFilter === kpi.id ? 'bg-'+kpi.color+'-500 text-white shadow-lg' : 'bg-slate-100 text-slate-400 group-hover:bg-'+kpi.color+'-50 group-hover:text-'+kpi.color+'-500'}">
-                        <i data-lucide="${kpi.icon}" class="w-6 h-6"></i>
+                <div onclick="setFilter('${kpi.id}')" class="cursor-pointer group p-5 rounded-[2rem] border-2 transition-all duration-300 ${activeFilter === kpi.id ? 'bg-white border-'+kpi.color+'-500 active-filter' : 'bg-white border-transparent shadow-sm hover:border-slate-200'}">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center mb-3 transition-all ${activeFilter === kpi.id ? 'bg-'+kpi.color+'-500 text-white shadow-lg' : 'bg-slate-100 text-slate-400 group-hover:bg-'+kpi.color+'-50 group-hover:text-'+kpi.color+'-500'}">
+                        <i data-lucide="${kpi.icon}" class="w-5 h-5"></i>
                     </div>
-                    <h3 class="text-[10px] font-black text-slate-400 mb-1 uppercase tracking-tighter text-right">${kpi.label}</h3>
+                    <h3 class="text-[9px] font-black text-slate-400 mb-1 uppercase tracking-tighter text-right">${kpi.label}</h3>
                     <div class="flex items-baseline gap-2 justify-start">
-                        <p class="text-4xl font-[900] text-slate-800 tracking-tighter">${kpi.val}</p>
+                        <p class="text-3xl font-[900] text-slate-800 tracking-tighter">${kpi.val}</p>
                         ${kpi.val > 0 && kpi.id !== 'all' ? '<span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>' : ''}
                     </div>
                 </div>
@@ -236,43 +238,45 @@
                 if (activeFilter === 'kerosene') return matchSearch && !item.kerosene;
                 if (activeFilter === 'commitment') return matchSearch && !item.commitment;
                 if (activeFilter === 'plan') return matchSearch && !item.plan;
+                if (activeFilter === 'readiness') return matchSearch && !item.readiness;
                 return matchSearch;
             });
 
             const tbody = document.getElementById('dataTableBody');
             if(filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="p-32 text-center text-slate-300 font-black italic uppercase tracking-widest leading-relaxed">لا توجد سجلات مطابقة للرصد الحالي</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" class="p-32 text-center text-slate-300 font-black italic uppercase tracking-widest leading-relaxed">لا توجد سجلات مطابقة للرصد الحالي</td></tr>`;
             } else {
                 tbody.innerHTML = filtered.map(item => {
-                    const isReady = item.liaison && item.kerosene && item.commitment && item.plan;
+                    const isReady = item.liaison && item.kerosene && item.commitment && item.plan && item.readiness;
                     return `
                         <tr class="group transition-all ${isReady ? 'bg-emerald-50/20' : ''}">
-                            <td class="p-8 text-center border-l border-slate-50">
-                                <span class="inline-flex items-center justify-center w-12 h-12 bg-slate-900 text-white rounded-xl font-black text-sm shadow-md">
+                            <td class="p-6 text-center border-l border-slate-50">
+                                <span class="inline-flex items-center justify-center w-10 h-10 bg-slate-900 text-white rounded-xl font-black text-xs shadow-md">
                                     ${item.displayId}
                                 </span>
                             </td>
-                            <td class="p-8">
-                                <div class="font-black text-slate-800 text-base leading-tight group-hover:text-emerald-700 transition-colors">${item.contractor}</div>
+                            <td class="p-6">
+                                <div class="font-black text-slate-800 text-sm leading-tight group-hover:text-emerald-700 transition-colors">${item.contractor}</div>
                             </td>
-                            <td class="p-8">
-                                <div class="text-sm font-black text-slate-700 mb-1">${item.officer}</div>
-                                <div class="text-[9px] font-black text-slate-400 flex items-center gap-2 bg-slate-100 w-fit px-2 py-1 rounded-lg">
+                            <td class="p-6">
+                                <div class="text-xs font-black text-slate-700 mb-1">${item.officer}</div>
+                                <div class="text-[8px] font-black text-slate-400 flex items-center gap-2 bg-slate-100 w-fit px-2 py-1 rounded-lg">
                                     <i data-lucide="phone" class="w-3 h-3 text-emerald-500"></i> ${item.phone || "---"}
                                 </div>
                             </td>
-                            <td class="p-8 text-center">${statusIcon(item.liaison)}</td>
-                            <td class="p-8 text-center">${statusIcon(item.kerosene)}</td>
-                            <td class="p-8 text-center">${statusIcon(item.commitment)}</td>
-                            <td class="p-8 text-center">${statusIcon(item.plan)}</td>
-                            <td class="p-8 text-center">
+                            <td class="p-6 text-center">${statusIcon(item.liaison)}</td>
+                            <td class="p-6 text-center">${statusIcon(item.kerosene)}</td>
+                            <td class="p-6 text-center">${statusIcon(item.commitment)}</td>
+                            <td class="p-6 text-center">${statusIcon(item.plan)}</td>
+                            <td class="p-6 text-center">${statusIcon(item.readiness)}</td>
+                            <td class="p-6 text-center">
                                 ${!isReady ? `
-                                    <button onclick='sendReminder(${JSON.stringify(item)})' class="bg-slate-950 text-white px-5 py-2.5 rounded-2xl hover:bg-emerald-500 hover:text-slate-950 transition-all shadow-lg flex items-center gap-2 mx-auto font-black text-[10px] uppercase">
-                                        <i data-lucide="send" class="w-4 h-4"></i> تذكير
+                                    <button onclick='sendReminder(${JSON.stringify(item)})' class="bg-slate-950 text-white px-4 py-2 rounded-xl hover:bg-emerald-500 hover:text-slate-950 transition-all shadow-lg flex items-center gap-2 mx-auto font-black text-[9px] uppercase">
+                                        <i data-lucide="send" class="w-3.5 h-3.5"></i> تذكير
                                     </button>
                                 ` : `
-                                    <div class="flex items-center justify-center gap-2 text-emerald-600 font-black text-[10px] bg-emerald-500/10 py-2.5 px-5 rounded-2xl border border-emerald-500/20 mx-auto w-fit">
-                                        <i data-lucide="check-circle" class="w-4 h-4"></i> جاهز تماماً
+                                    <div class="flex items-center justify-center gap-2 text-emerald-600 font-black text-[9px] bg-emerald-500/10 py-2 px-4 rounded-xl border border-emerald-500/20 mx-auto w-fit">
+                                        <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> مكتمل
                                     </div>
                                 `}
                             </td>
@@ -285,8 +289,8 @@
 
         function statusIcon(isDone) {
             return `
-                <div class="p-2.5 rounded-xl inline-flex transition-all ${isDone ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/10' : 'bg-slate-100 text-slate-300'}">
-                    <i data-lucide="${isDone ? 'check-circle-2' : 'x-circle'}" class="w-6 h-6"></i>
+                <div class="p-2 rounded-xl inline-flex transition-all ${isDone ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/10' : 'bg-slate-100 text-slate-300'}">
+                    <i data-lucide="${isDone ? 'check-circle-2' : 'x-circle'}" class="w-5 h-5"></i>
                 </div>
             `;
         }
@@ -301,7 +305,8 @@
             if (!item.liaison) missing.push("وثيقة ضابط الاتصال");
             if (!item.kerosene) missing.push("شهادة الكيروسين");
             if (!item.commitment) missing.push("ملف التعهد");
-            if (!item.plan) missing.push("الخطة التشغيلية (AA)");
+            if (!item.plan) missing.push("الخطة التشغيلية");
+            if (!item.readiness) missing.push("محضر الجاهزية التشغيلية");
 
             const msg = `السلام عليكم ورحمة الله وبركاته، الأستاذ ${item.officer} ضابط اتصال ${item.contractor}\n\nنحيطكم علماً بوجود نقص في المتطلبات الإدارية والتشغيلية لمركزكم بمنى رقم (${item.displayId}):\n${missing.map(m => ` • ${m}`).join('\n')}\n\nنأمل منكم سرعة استكمال المتطلبات لضمان الجاهزية التشغيلية.\nشاكرين لكم تعاونكم.`;
             
